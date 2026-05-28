@@ -3,8 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mahjong Solitaire</title>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<!-- ── Primary SEO ─────────────────────────────────────────────────────── -->
+<title>雀 Mahjong Solitaire – 3D Browser Game | 5 Layouts</title>
+<meta name="description"        content="Play classic Mahjong Solitaire in your browser — beautifully rendered in 3D with Three.js. 144 tiles, 5 unique layouts (Turtle, Dragon, Pyramid, Cross, Castle), undo, hints, timer. No download, no install.">
+<meta name="keywords"           content="mahjong solitaire, mahjong game, 3D mahjong, browser game, HTML5 game, Shanghai mahjong, tile matching, online mahjong, kostenloses mahjong, mahjong gratis">
+<meta name="author"             content="HelmutQualtinger">
+<meta name="robots"             content="index, follow">
+<link rel="canonical"           href="https://helmutqualtinger.github.io/mahjong/mahjong.html">
+
+<!-- ── Open Graph (Facebook, LinkedIn, WhatsApp, …) ──────────────────── -->
+<meta property="og:type"        content="website">
+<meta property="og:title"       content="雀 Mahjong Solitaire – 3D Browser Game">
+<meta property="og:description" content="Classic Mahjong Solitaire in 3D — 144 tiles, 5 layouts, undo, hints. Play instantly in any browser, no download needed.">
+<meta property="og:url"         content="https://helmutqualtinger.github.io/mahjong/mahjong.html">
+<meta property="og:image"       content="https://raw.githubusercontent.com/HelmutQualtinger/mahjong/main/screenshot.png">
+<meta property="og:image:alt"   content="Mahjong Solitaire 3D – tile board with Chinese characters">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height"content="720">
+<meta property="og:locale"      content="de_DE">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:site_name"   content="Mahjong Solitaire">
+
+<!-- ── Twitter / X Card ───────────────────────────────────────────────── -->
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="雀 Mahjong Solitaire – 3D Browser Game">
+<meta name="twitter:description" content="Classic Mahjong Solitaire in 3D — 144 tiles, 5 layouts, undo, hints. Play instantly in your browser.">
+<meta name="twitter:image"       content="https://raw.githubusercontent.com/HelmutQualtinger/mahjong/main/screenshot.png">
+<meta name="twitter:image:alt"   content="Mahjong Solitaire 3D board">
+
+<!-- ── Structured Data (JSON-LD) ──────────────────────────────────────── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Mahjong Solitaire",
+  "alternateName": "雀 Mahjong",
+  "description": "Classic Mahjong Solitaire rendered in 3D with Three.js. 144 tiles across 5 unique board layouts. Play in any modern browser without download or install.",
+  "url": "https://helmutqualtinger.github.io/mahjong/mahjong.html",
+  "image": "https://raw.githubusercontent.com/HelmutQualtinger/mahjong/main/screenshot.png",
+  "author": { "@type": "Person", "name": "HelmutQualtinger" },
+  "genre": ["Puzzle", "Board Game", "Tile Matching"],
+  "gamePlatform": "Web Browser",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any",
+  "inLanguage": ["de", "en", "it"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+}
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&display=swap');
 
@@ -147,6 +202,7 @@ select#layout-select option { background: #0d1f3a; }
     </div>
     <button onclick="undoMove()">↩ Rückgängig</button>
     <button onclick="showHint()">💡 Hinweis</button>
+    <button onclick="resetView()">🎯 Ansicht</button>
     <button onclick="newGame()">↺ Neu</button>
   </div>
 </div>
@@ -162,7 +218,10 @@ select#layout-select option { background: #0d1f3a; }
 </div>
 <div id="no-moves">Keine Züge mehr möglich!</div>
 
-<script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
 // ─── TILE TYPES ───────────────────────────────────────────────────────────────
 const MAN_G    = ['一','二','三','四','五','六','七','八','九'];
 const PIN_G    = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'];
@@ -237,7 +296,8 @@ const LAYOUTS = {
 };
 
 // ─── THREE.JS SETUP ───────────────────────────────────────────────────────────
-let scene, camera, renderer, raycaster;
+let scene, camera, renderer, raycaster, controls;
+let defaultCamPos = null, defaultTarget = null;
 const mouse      = new THREE.Vector2();
 const meshToTile = new Map();
 
@@ -391,10 +451,29 @@ function initThree() {
   fill.position.set(-5, 3, -4); scene.add(fill);
 
   raycaster = new THREE.Raycaster();
-  renderer.domElement.addEventListener('click', onCanvasClick);
+
+  // OrbitControls – left-drag rotates, scroll zooms, right-drag pans
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.07;
+  controls.rotateSpeed    = 0.55;
+  controls.zoomSpeed      = 1.1;
+  controls.panSpeed       = 0.8;
+  controls.minDistance    = 4;
+  controls.maxDistance    = 120;
+
+  // Distinguish drag (rotate) from click (select tile):
+  // fire tile-click only when mouse moved < 5px between down and up.
+  let downX = 0, downY = 0;
+  renderer.domElement.addEventListener('mousedown', e => { downX=e.clientX; downY=e.clientY; });
+  renderer.domElement.addEventListener('mouseup',   e => {
+    const dx=e.clientX-downX, dy=e.clientY-downY;
+    if(Math.sqrt(dx*dx+dy*dy) < 5) onCanvasClick(e);
+  });
 
   ;(function loop() {
     requestAnimationFrame(loop);
+    controls.update();          // needed for damping
     renderer.render(scene, camera);
   })();
 }
@@ -427,9 +506,28 @@ function fitCamera() {
 
   // Slight downward tilt (~14°) to show tile depth / stacking
   const tilt = 0.24;
+  const target = new THREE.Vector3(cx, cy - 0.4, 0);
   camera.position.set(cx, cy + dist*Math.sin(tilt)*0.7, dist*Math.cos(tilt));
-  camera.lookAt(cx, cy - 0.4, 0);
+  camera.lookAt(target);
   camera.updateProjectionMatrix();
+
+  if(controls) {
+    controls.target.copy(target);
+    controls.update();
+  }
+
+  // Save as home position (set once per new game)
+  if(!defaultCamPos) {
+    defaultCamPos = camera.position.clone();
+    defaultTarget = target.clone();
+  }
+}
+
+function resetView() {
+  if(!defaultCamPos || !controls) return;
+  camera.position.copy(defaultCamPos);
+  controls.target.copy(defaultTarget);
+  controls.update();
 }
 
 // ─── GAME STATE ───────────────────────────────────────────────────────────────
@@ -445,6 +543,7 @@ function newGame() {
   clearInterval(timerInterval);
   selected = null; score = 0; pairsRemoved = 0; history = [];
   hintTiles.forEach(t=>t.hinting=false); hintTiles=[]; clearTimeout(hintTimeout);
+  defaultCamPos = null; defaultTarget = null; // recalculate home for new layout
   updateStats();
 
   const layoutKey = document.getElementById('layout-select').value;
@@ -664,6 +763,12 @@ window.addEventListener('resize',()=>{
 });
 
 // ─── START ────────────────────────────────────────────────────────────────────
+// Expose functions to HTML onclick handlers (module scope is not global)
+window.newGame   = newGame;
+window.undoMove  = undoMove;
+window.showHint  = showHint;
+window.resetView = resetView;
+
 initThree();
 document.fonts.ready.then(()=>newGame());
 </script>
