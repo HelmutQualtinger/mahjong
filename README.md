@@ -2,7 +2,7 @@
 
 A classic Mahjong solitaire game playable directly in the browser — no dependencies, no build step, single HTML file.
 
-![Mahjong Screenshot](screenshot.png)
+<img src="screenshot.png" align="right" width="340" alt="Mahjong Screenshot"/>
 
 ## How to Play
 
