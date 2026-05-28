@@ -63,3 +63,36 @@ Klassisches Mahjong-Solitaire, direkt im Browser spielbar — keine Abhängigkei
 - Zug rückgängig machen, Hinweis-Funktion, Timer, Punktestand
 - Sieg- und Keine-Züge-Erkennung
 - Rein clientseitig — funktioniert offline
+
+---
+
+## Italiano
+
+Classico gioco Mahjong solitario, giocabile direttamente nel browser — nessuna dipendenza, nessuna fase di build, un unico file HTML.
+
+### Come si gioca
+
+1. Aprire `mahjong.html` in qualsiasi browser moderno
+2. Scegliere un **Layout** dal menu a tendina e cliccare **↺ Neu** per iniziare
+3. Cliccare due tessere libere e identiche per rimuoverle come coppia
+4. Una tessera è *libera* se non ha nulla sopra di essa e almeno un lato (sinistro o destro) è aperto
+5. Rimuovere tutte le 144 tessere per vincere
+
+### Funzionalità
+
+- **5 layout selezionabili** — Schildkröte, Drache, Pyramide, Kreuz, Festung
+- 144 tessere su fino a 6 livelli sovrapposti
+- Set completo di tessere Mahjong Unicode: Caratteri, Bambù, Cerchi, Venti (東南西北), Draghi (中發白), Fiori & Stagioni
+- Annulla ultima mossa, Suggerimento (evidenzia una coppia valida), Timer, Punteggio
+- Rilevamento vittoria e nessuna-mossa disponibile
+- Puramente lato client — funziona offline, nessun server necessario
+
+### Layout
+
+| Layout | Forma | Livelli |
+|---|---|---|
+| 🐢 Schildkröte | Piramide classica con ali laterali | 6 |
+| 🐉 Drache | Drago orizzontale: spina dorsale, pancia, testa & coda | 6 |
+| 🔺 Pyramide | Rettangoli concentrici decrescenti | 4 |
+| ✚ Kreuz | Forma a croce con centro sovrapposto | 4 |
+| 🏰 Festung | Anelli rettangolari concentrici (castello visto dall'alto) | 4 |
