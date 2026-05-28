@@ -2,6 +2,8 @@
 
 A classic Mahjong solitaire game playable directly in the browser — no dependencies, no build step, single HTML file.
 
+![Mahjong Screenshot](screenshot.png)
+
 ## How to Play
 
 1. Open `gemini.html` in any modern browser
