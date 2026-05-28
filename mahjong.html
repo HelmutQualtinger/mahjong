@@ -4,22 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mahjong Solitaire</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&display=swap');
 
 :root {
-  --bg: #0a1628;
-  --bg2: #0f1f3d;
   --gold: #d4af37;
-  --tile-face: #f5eed8;
-  --tile-side-r: #c8b98a;
-  --tile-side-b: #a89660;
-  --tile-border: #8a7a50;
-  --selected: #ffe066;
-  --hint: #66ffcc;
+  --bg:   #0a1628;
   --text: #e8d5a0;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -38,11 +31,12 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 7px 16px;
-  background: linear-gradient(180deg, #0a1628 0%, #0d1f3a 100%);
+  background: linear-gradient(180deg, #0a1628, #0d1f3a);
   border-bottom: 1px solid #1e3a5f;
   flex-shrink: 0;
   gap: 10px;
   flex-wrap: wrap;
+  z-index: 10;
 }
 
 #topbar h1 {
@@ -54,16 +48,11 @@ body {
   white-space: nowrap;
 }
 
-.stats {
-  display: flex;
-  gap: 16px;
-  font-size: 0.72em;
-  color: #a0b8d0;
-}
-.stat { text-align: center; }
-.stat-val { font-size: 1.4em; color: var(--gold); display: block; line-height: 1.1; }
+.stats { display:flex; gap:16px; font-size:0.72em; color:#a0b8d0; }
+.stat  { text-align:center; }
+.stat-val { font-size:1.4em; color:var(--gold); display:block; line-height:1.1; }
 
-.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
 button {
   padding: 5px 12px;
@@ -74,21 +63,13 @@ button {
   font-size: 0.68em;
   cursor: pointer;
   border-radius: 3px;
-  transition: all 0.15s;
+  transition: background 0.15s;
   white-space: nowrap;
 }
-button:hover { background: rgba(212,175,55,0.15); }
+button:hover  { background: rgba(212,175,55,0.15); }
 button:active { background: rgba(212,175,55,0.3); }
 
-/* Layout selector */
-.layout-select-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.68em;
-  color: #a0b8d0;
-  white-space: nowrap;
-}
+.layout-wrap { display:flex; align-items:center; gap:6px; font-size:0.68em; color:#a0b8d0; }
 select#layout-select {
   background: #0d1f3a;
   border: 1px solid var(--gold);
@@ -102,112 +83,18 @@ select#layout-select {
 }
 select#layout-select option { background: #0d1f3a; }
 
-/* Game area */
 #game-area {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 30% 40%, rgba(10,80,40,0.25) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 60%, rgba(10,30,80,0.3) 0%, transparent 60%),
-    var(--bg2);
 }
-
-#board {
-  position: relative;
-  transform-origin: center center;
-}
-
-/* TILE */
-.tile {
-  position: absolute;
-  width: 52px;
-  height: 68px;
-  cursor: pointer;
-  transition: filter 0.1s;
-}
-.tile.blocked { cursor: default; }
-
-.tile .face {
-  position: absolute;
-  inset: 0;
-  background: var(--tile-face);
-  border-radius: 5px;
-  border: 1px solid var(--tile-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  line-height: 1;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.8),
-    inset 0 -1px 0 rgba(0,0,0,0.12);
-  overflow: hidden;
-  transition: background 0.1s, box-shadow 0.1s;
-}
-
-/* 3D right edge */
-.tile::after {
-  content: '';
-  position: absolute;
-  right: -5px; top: 4px;
-  width: 5px; height: 100%;
-  background: var(--tile-side-r);
-  border-radius: 0 3px 3px 0;
-  border-top: 1px solid #b8a870;
-  border-right: 1px solid #8a7040;
-  border-bottom: 1px solid #6a5030;
-}
-
-/* 3D bottom edge */
-.tile::before {
-  content: '';
-  position: absolute;
-  bottom: -4px; left: 4px;
-  width: 100%; height: 4px;
-  background: var(--tile-side-b);
-  border-radius: 0 0 3px 3px;
-  border-left: 1px solid #9a8850;
-  border-bottom: 1px solid #6a5030;
-}
-
-.tile.selected .face {
-  background: #fff8d0;
-  border-color: var(--selected);
-  box-shadow: 0 0 0 2px var(--selected), inset 0 1px 0 rgba(255,255,255,0.9), 0 0 15px rgba(255,224,102,0.6);
-}
-.tile.hint-flash .face {
-  background: #d0fff0;
-  border-color: var(--hint);
-  box-shadow: 0 0 0 2px var(--hint), 0 0 18px rgba(102,255,204,0.7);
-}
-.tile.blocked .face { filter: brightness(0.72) saturate(0.6); }
-.tile:not(.blocked):not(.selected):hover .face { background: #fffae8; border-color: #c8a840; }
-
-.tile .corner-tl, .tile .corner-br {
-  position: absolute;
-  font-size: 9px; line-height: 1;
-  font-family: 'Noto Serif SC', serif;
-}
-.tile .corner-tl { top: 3px; left: 4px; }
-.tile .corner-br { bottom: 3px; right: 4px; transform: rotate(180deg); }
-
-.suit-man .face   { color: #c0392b; }
-.suit-pin .face   { color: #1a4a8a; }
-.suit-sou .face   { color: #1a7a3c; }
-.suit-wind .face  { color: #2c3e50; }
-.suit-dragon .face{ color: #8b0000; }
-.suit-flower .face{ color: #9b59b6; }
-.suit-season .face{ color: #e67e22; }
+#game-area canvas { display: block; }
 
 /* Overlay */
 #overlay {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
+  background: rgba(0,0,0,0.7);
   z-index: 100;
   align-items: center; justify-content: center;
 }
@@ -221,22 +108,20 @@ select#layout-select option { background: #0d1f3a; }
   box-shadow: 0 0 60px rgba(212,175,55,0.3);
 }
 #overlay-box h2 {
-  font-size: 2em; color: var(--gold); margin-bottom: 10px;
-  font-family: 'Noto Serif SC', serif; letter-spacing: 4px;
+  font-size:2em; color:var(--gold); margin-bottom:10px;
+  font-family:'Noto Serif SC',serif; letter-spacing:4px;
 }
-#overlay-box p { color: #a0b8d0; margin-bottom: 24px; }
-#overlay-box button { padding: 10px 28px; font-size: 0.85em; }
+#overlay-box p { color:#a0b8d0; margin-bottom:24px; }
+#overlay-box button { padding:10px 28px; font-size:0.85em; }
 
 #no-moves {
   display: none;
-  position: fixed; bottom: 20px; left: 50%;
+  position: fixed; bottom:20px; left:50%;
   transform: translateX(-50%);
-  background: rgba(192,57,43,0.9);
-  color: #fff; padding: 8px 20px; border-radius: 20px;
-  font-size: 0.8em; z-index: 50;
+  background: rgba(192,57,43,0.92);
+  color:#fff; padding:8px 22px; border-radius:20px;
+  font-size:0.8em; z-index:50;
 }
-@keyframes tileRemove { to { opacity: 0; transform: scale(0.8); } }
-.tile.removing { animation: tileRemove 0.22s forwards; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -250,7 +135,7 @@ select#layout-select option { background: #0d1f3a; }
     <div class="stat"><span class="stat-val" id="timer-val">0:00</span>Zeit</div>
   </div>
   <div class="controls">
-    <div class="layout-select-wrap">
+    <div class="layout-wrap">
       Layout:
       <select id="layout-select" onchange="newGame()">
         <option value="turtle">🐢 Schildkröte</option>
@@ -266,7 +151,7 @@ select#layout-select option { background: #0d1f3a; }
   </div>
 </div>
 
-<div id="game-area"><div id="board"></div></div>
+<div id="game-area"></div>
 
 <div id="overlay">
   <div id="overlay-box">
@@ -279,282 +164,357 @@ select#layout-select option { background: #0d1f3a; }
 
 <script>
 // ─── TILE TYPES ───────────────────────────────────────────────────────────────
-const MAN_GLYPHS    = ['一','二','三','四','五','六','七','八','九'];
-const PIN_GLYPHS    = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'];
-const SOU_GLYPHS    = ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'];
-const WIND_GLYPHS   = ['東','南','西','北'];
-const DRAGON_GLYPHS = ['中','發','白'];
-const FLOWER_GLYPHS = ['梅','蘭','菊','竹'];
-const SEASON_GLYPHS = ['春','夏','秋','冬'];
+const MAN_G    = ['一','二','三','四','五','六','七','八','九'];
+const PIN_G    = ['🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡'];
+const SOU_G    = ['🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘'];
+const WIND_G   = ['東','南','西','北'];
+const DRAGON_G = ['中','發','白'];
+const FLOWER_G = ['梅','蘭','菊','竹'];
+const SEASON_G = ['春','夏','秋','冬'];
 
 function buildTileTypes() {
   const t = [];
-  for(let i=0;i<9;i++) t.push({suit:'man',    idx:i, glyph:MAN_GLYPHS[i],    key:`man${i}`});
-  for(let i=0;i<9;i++) t.push({suit:'pin',    idx:i, glyph:PIN_GLYPHS[i],    key:`pin${i}`});
-  for(let i=0;i<9;i++) t.push({suit:'sou',    idx:i, glyph:SOU_GLYPHS[i],    key:`sou${i}`});
-  for(let i=0;i<4;i++) t.push({suit:'wind',   idx:i, glyph:WIND_GLYPHS[i],   key:`wind${i}`});
-  for(let i=0;i<3;i++) t.push({suit:'dragon', idx:i, glyph:DRAGON_GLYPHS[i], key:`dragon${i}`});
-  // flowers & seasons each match within their group; 1 copy each (4 total per group)
-  for(let i=0;i<4;i++) t.push({suit:'flower', idx:i, glyph:FLOWER_GLYPHS[i], key:'flower', matchGroup:'flower'});
-  for(let i=0;i<4;i++) t.push({suit:'season', idx:i, glyph:SEASON_GLYPHS[i], key:'season', matchGroup:'season'});
-  return t; // 34 base types → 34×4 - 4 - 4 + 4 + 4 = 136 + 8 = 144 when expanded
+  for(let i=0;i<9;i++) t.push({suit:'man',    idx:i, glyph:MAN_G[i],    key:`man${i}`});
+  for(let i=0;i<9;i++) t.push({suit:'pin',    idx:i, glyph:PIN_G[i],    key:`pin${i}`});
+  for(let i=0;i<9;i++) t.push({suit:'sou',    idx:i, glyph:SOU_G[i],    key:`sou${i}`});
+  for(let i=0;i<4;i++) t.push({suit:'wind',   idx:i, glyph:WIND_G[i],   key:`wind${i}`});
+  for(let i=0;i<3;i++) t.push({suit:'dragon', idx:i, glyph:DRAGON_G[i], key:`dragon${i}`});
+  for(let i=0;i<4;i++) t.push({suit:'flower', idx:i, glyph:FLOWER_G[i], key:'flower', matchGroup:'flower'});
+  for(let i=0;i<4;i++) t.push({suit:'season', idx:i, glyph:SEASON_G[i], key:'season', matchGroup:'season'});
+  return t;
 }
 
-// ─── LAYOUTS ──────────────────────────────────────────────────────────────────
-// Each layout function returns exactly 144 {layer,col,row} positions.
-// Convention: layer 0 = bottom, higher layer = on top.
-// isFree check uses integer col/row equality, so stacking must be exact.
-
+// ─── LAYOUTS (each returns exactly 144 {layer,col,row} positions) ─────────────
 const LAYOUTS = {
-
-  // ── Schildkröte (Turtle) ──────────────────────────────────────────────────
-  // Classic pyramid: flat base + 5 ascending layers + 4 wing tiles.
-  // L0=60, wings=4, L1=36, L2=24, L3=12, L4=6, L5=2  →  144
-  turtle: {
-    label: '🐢 Schildkröte',
-    build() {
-      const p = [];
-      const a = (l,c,r) => p.push({layer:l,col:c,row:r});
-      // L0: 12 cols × 5 rows = 60
-      for(let r=0;r<5;r++) for(let c=0;c<12;c++) a(0,c,r);
-      // Wings: 4 tiles flanking rows 1-2
-      a(0,-1,1); a(0,-1,2); a(0,12,1); a(0,12,2);
-      // L1: cols 1-9 × rows 0-3 = 9×4 = 36
-      for(let r=0;r<4;r++) for(let c=1;c<=9;c++) a(1,c,r);
-      // L2: cols 2-9 × rows 0-2 = 8×3 = 24
-      for(let r=0;r<3;r++) for(let c=2;c<=9;c++) a(2,c,r);
-      // L3: cols 3-8 × rows 0-1 = 6×2 = 12
-      for(let r=0;r<2;r++) for(let c=3;c<=8;c++) a(3,c,r);
-      // L4: cols 3-8 × row 0 = 6
-      for(let c=3;c<=8;c++) a(4,c,0);
-      // L5: cols 4-5 × row 0 = 2
-      a(5,4,0); a(5,5,0);
-      // Total: 60+4+36+24+12+6+2 = 144 ✓
-      return p;
-    }
-  },
-
-  // ── Drache (Dragon) ───────────────────────────────────────────────────────
-  // Long horizontal serpent: spine + belly bumps + head + tail, 6 stacked layers.
-  // L0=60, L1=32, L2=24, L3=16, L4=8, L5=4  →  144
-  dragon: {
-    label: '🐉 Drache',
-    build() {
-      const p = [];
-      const a = (l,c,r) => p.push({layer:l,col:c,row:r});
-      // Spine: rows 2-3, cols 0-17 = 2×18 = 36
-      for(let c=0;c<18;c++) { a(0,c,2); a(0,c,3); }
-      // Belly bumps: rows 1 & 4, cols 6-11 = 2×6 = 12
-      for(let c=6;c<12;c++) { a(0,c,1); a(0,c,4); }
-      // Head (right): col 18, rows 0-5 = 6
-      for(let r=0;r<6;r++) a(0,18,r);
-      // Tail (left): col -1, rows 0-5 = 6
-      for(let r=0;r<6;r++) a(0,-1,r);
-      // L0 total: 36+12+6+6 = 60 ✓
-      // Stacked layers on spine (rows 2-3):
-      for(let c=1;c<17;c++) { a(1,c,2); a(1,c,3); }  // L1: 16×2 = 32
-      for(let c=3;c<15;c++) { a(2,c,2); a(2,c,3); }  // L2: 12×2 = 24
-      for(let c=5;c<13;c++) { a(3,c,2); a(3,c,3); }  // L3:  8×2 = 16
-      for(let c=7;c<11;c++) { a(4,c,2); a(4,c,3); }  // L4:  4×2 = 8
-      for(let c=8;c<10;c++) { a(5,c,2); a(5,c,3); }  // L5:  2×2 = 4
-      // Total: 60+32+24+16+8+4 = 144 ✓
-      return p;
-    }
-  },
-
-  // ── Pyramide ──────────────────────────────────────────────────────────────
-  // Stepped pyramid viewed from above: 4 concentric shrinking rectangles.
-  // L0=72, L1=36, L2=24, L3=12  →  144
-  pyramid: {
-    label: '🔺 Pyramide',
-    build() {
-      const p = [];
-      const a = (l,c,r) => p.push({layer:l,col:c,row:r});
-      // L0: 12×6 = 72
-      for(let r=0;r<6;r++) for(let c=0;c<12;c++) a(0,c,r);
-      // L1: cols 1-9 × rows 1-4 = 9×4 = 36
-      for(let r=1;r<5;r++) for(let c=1;c<=9;c++) a(1,c,r);
-      // L2: cols 2-9 × rows 1-3 = 8×3 = 24
-      for(let r=1;r<4;r++) for(let c=2;c<=9;c++) a(2,c,r);
-      // L3: cols 3-8 × rows 1-2 = 6×2 = 12
-      for(let r=1;r<3;r++) for(let c=3;c<=8;c++) a(3,c,r);
-      // Total: 72+36+24+12 = 144 ✓
-      return p;
-    }
-  },
-
-  // ── Kreuz (Cross) ─────────────────────────────────────────────────────────
-  // Cross / plus-sign shape: wide horizontal bar + vertical extensions, stacked in center.
-  // L0=72, L1=40, L2=24, L3=8  →  144
-  cross: {
-    label: '✚ Kreuz',
-    build() {
-      const p = [];
-      const a = (l,c,r) => p.push({layer:l,col:c,row:r});
-      // Horizontal bar: rows 2-5, cols 0-11 = 4×12 = 48
-      for(let r=2;r<6;r++) for(let c=0;c<12;c++) a(0,c,r);
-      // Vertical arm extensions: rows 0-1 & 6-7, cols 3-8 = 4×6 = 24
-      for(let c=3;c<9;c++) { a(0,c,0); a(0,c,1); a(0,c,6); a(0,c,7); }
-      // L0 total: 48+24 = 72 ✓
-      // L1: rows 2-5, cols 1-10 = 4×10 = 40
-      for(let r=2;r<6;r++) for(let c=1;c<=10;c++) a(1,c,r);
-      // L2: rows 2-5, cols 3-8 = 4×6 = 24
-      for(let r=2;r<6;r++) for(let c=3;c<=8;c++) a(2,c,r);
-      // L3: rows 3-4, cols 4-7 = 2×4 = 8
-      for(let r=3;r<5;r++) for(let c=4;c<=7;c++) a(3,c,r);
-      // Total: 72+40+24+8 = 144 ✓
-      return p;
-    }
-  },
-
-  // ── Festung (Castle) ──────────────────────────────────────────────────────
-  // Concentric filled rectangles, like a tower seen from above.
-  // L0=72, L1=42, L2=20, L3=10  →  144
-  castle: {
-    label: '🏰 Festung',
-    build() {
-      const p = [];
-      const a = (l,c,r) => p.push({layer:l,col:c,row:r});
-      // L0: 9 cols × 8 rows = 72
-      for(let r=0;r<8;r++) for(let c=0;c<9;c++) a(0,c,r);
-      // L1: cols 1-7 × rows 1-6 = 7×6 = 42
-      for(let r=1;r<7;r++) for(let c=1;c<=7;c++) a(1,c,r);
-      // L2: cols 2-5 × rows 2-6 = 4×5 = 20
-      for(let r=2;r<7;r++) for(let c=2;c<=5;c++) a(2,c,r);
-      // L3: cols 2-6 × rows 3-4 = 5×2 = 10
-      for(let r=3;r<5;r++) for(let c=2;c<=6;c++) a(3,c,r);
-      // Total: 72+42+20+10 = 144 ✓
-      return p;
-    }
-  },
+  turtle: { label:'🐢 Schildkröte', build() {
+    const p=[]; const a=(l,c,r)=>p.push({layer:l,col:c,row:r});
+    for(let r=0;r<5;r++) for(let c=0;c<12;c++) a(0,c,r);       // L0: 60
+    a(0,-1,1);a(0,-1,2);a(0,12,1);a(0,12,2);                    // wings: 4
+    for(let r=0;r<4;r++) for(let c=1;c<=9;c++) a(1,c,r);        // L1: 36
+    for(let r=0;r<3;r++) for(let c=2;c<=9;c++) a(2,c,r);        // L2: 24
+    for(let r=0;r<2;r++) for(let c=3;c<=8;c++) a(3,c,r);        // L3: 12
+    for(let c=3;c<=8;c++) a(4,c,0);                               // L4: 6
+    a(5,4,0); a(5,5,0);                                           // L5: 2 → 144
+    return p;
+  }},
+  dragon: { label:'🐉 Drache', build() {
+    const p=[]; const a=(l,c,r)=>p.push({layer:l,col:c,row:r});
+    for(let c=0;c<18;c++){a(0,c,2);a(0,c,3);}                   // spine: 36
+    for(let c=6;c<12;c++){a(0,c,1);a(0,c,4);}                   // belly: 12
+    for(let r=0;r<6;r++){a(0,18,r);a(0,-1,r);}                  // head+tail: 12 → L0=60
+    for(let c=1;c<17;c++){a(1,c,2);a(1,c,3);}                   // L1: 32
+    for(let c=3;c<15;c++){a(2,c,2);a(2,c,3);}                   // L2: 24
+    for(let c=5;c<13;c++){a(3,c,2);a(3,c,3);}                   // L3: 16
+    for(let c=7;c<11;c++){a(4,c,2);a(4,c,3);}                   // L4: 8
+    for(let c=8;c<10;c++){a(5,c,2);a(5,c,3);}                   // L5: 4 → 144
+    return p;
+  }},
+  pyramid: { label:'🔺 Pyramide', build() {
+    const p=[]; const a=(l,c,r)=>p.push({layer:l,col:c,row:r});
+    for(let r=0;r<6;r++) for(let c=0;c<12;c++) a(0,c,r);        // L0: 72
+    for(let r=1;r<5;r++) for(let c=1;c<=9;c++)  a(1,c,r);       // L1: 36
+    for(let r=1;r<4;r++) for(let c=2;c<=9;c++)  a(2,c,r);       // L2: 24
+    for(let r=1;r<3;r++) for(let c=3;c<=8;c++)  a(3,c,r);       // L3: 12 → 144
+    return p;
+  }},
+  cross: { label:'✚ Kreuz', build() {
+    const p=[]; const a=(l,c,r)=>p.push({layer:l,col:c,row:r});
+    for(let r=2;r<6;r++) for(let c=0;c<12;c++) a(0,c,r);        // horiz bar: 48
+    for(let c=3;c<9;c++){a(0,c,0);a(0,c,1);a(0,c,6);a(0,c,7);} // vert ext: 24 → L0=72
+    for(let r=2;r<6;r++) for(let c=1;c<=10;c++) a(1,c,r);       // L1: 40
+    for(let r=2;r<6;r++) for(let c=3;c<=8;c++)  a(2,c,r);       // L2: 24
+    for(let r=3;r<5;r++) for(let c=4;c<=7;c++)  a(3,c,r);       // L3: 8 → 144
+    return p;
+  }},
+  castle: { label:'🏰 Festung', build() {
+    const p=[]; const a=(l,c,r)=>p.push({layer:l,col:c,row:r});
+    for(let r=0;r<8;r++) for(let c=0;c<9;c++) a(0,c,r);         // L0: 72
+    for(let r=1;r<7;r++) for(let c=1;c<=7;c++) a(1,c,r);        // L1: 42
+    for(let r=2;r<7;r++) for(let c=2;c<=5;c++) a(2,c,r);        // L2: 20
+    for(let r=3;r<5;r++) for(let c=2;c<=6;c++) a(3,c,r);        // L3: 10 → 144
+    return p;
+  }},
 };
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
+// ─── THREE.JS SETUP ───────────────────────────────────────────────────────────
+let scene, camera, renderer, raycaster;
+const mouse      = new THREE.Vector2();
+const meshToTile = new Map();
+
+// Shared geometry (all tiles the same shape)
+const TILE_W=1.0, TILE_H=1.3, TILE_D=0.28;
+const tileGeo = new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D);
+
+// Board spacing
+const STEP_X=1.08, STEP_Y=1.36, STEP_Z=TILE_D;
+const LAY_X=0.05,  LAY_Y=0.04;  // XY shift per layer for stacking parallax
+
+function tilePos(col, row, layer) {
+  return new THREE.Vector3(
+    col * STEP_X + layer * LAY_X,
+    -row * STEP_Y + layer * LAY_Y,
+    layer * STEP_Z
+  );
+}
+
+// Base material colors
+const C = {
+  side: new THREE.Color(0xc0ad80),
+  top:  new THREE.Color(0xddd0a0),
+  bot:  new THREE.Color(0x9a8055),
+  back: new THREE.Color(0xd0c494),
+  face: new THREE.Color(1,1,1),    // white → texture shows through
+};
+
+// Tints for game states
+const TINT = {
+  normal:   new THREE.Color(1,1,1),
+  blocked:  new THREE.Color(0.48,0.48,0.48),
+  selected: new THREE.Color(1.0, 0.90, 0.25),
+  hint:     new THREE.Color(0.30, 1.0, 0.80),
+};
+
+function applyState(tile, state) {
+  if(!tile.mesh) return;
+  const m   = tile.mesh.material;  // [+x, -x, +y, -y, +z(front), -z(back)]
+  const tnt = TINT[state];
+  const bases = [C.side, C.side, C.top, C.bot, C.face, C.back];
+
+  // Reset z-pop
+  const base = tilePos(tile.col, tile.row, tile.layer);
+  tile.mesh.position.z = base.z + (state==='selected' ? 0.14 : 0);
+
+  if(state==='blocked') {
+    for(let i=0;i<6;i++) m[i].color.copy(bases[i]).multiply(tnt);
+  } else if(state==='selected' || state==='hint') {
+    // Only tint front face; sides stay normal
+    for(let i=0;i<6;i++) m[i].color.copy(bases[i]);
+    m[4].color.multiply(tnt);
+  } else { // normal
+    for(let i=0;i<6;i++) m[i].color.copy(bases[i]);
+  }
+}
+
+// ─── CANVAS TEXTURES ──────────────────────────────────────────────────────────
+const texCache = new Map();
+const SUIT_COLOR = {
+  man:'#c0392b', pin:'#1a4a8a', sou:'#1a7a3c',
+  wind:'#2c3e50', dragon:'#8b0000', flower:'#7b2d8b', season:'#c05010',
+};
+
+function getFaceTex(tile) {
+  const k = tile.suit + tile.idx;
+  if(texCache.has(k)) return texCache.get(k);
+
+  const W=128, H=168;
+  const cv = document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d');
+
+  // Background gradient
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#fdf6e2'); g.addColorStop(1,'#ede4c4');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.roundRect(0,0,W,H,10); ctx.fill();
+
+  // Outer border
+  ctx.strokeStyle = '#8a7a50'; ctx.lineWidth = 3.5;
+  ctx.beginPath(); ctx.roundRect(1.75,1.75,W-3.5,H-3.5,8.5); ctx.stroke();
+
+  // Inner gloss line
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(4,4,W-8,H-8,6); ctx.stroke();
+
+  // Main symbol
+  ctx.fillStyle = SUIT_COLOR[tile.suit] || '#333';
+  ctx.font = `bold 58px "Noto Serif SC","Apple Color Emoji",serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(tile.glyph, W/2, H/2 + 6);
+
+  // Corner rank for numbered suits
+  if(['man','pin','sou'].includes(tile.suit)) {
+    ctx.font = `bold 14px "Noto Serif SC",serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(tile.idx+1, 11, 13);
+    ctx.save(); ctx.translate(W-11,H-13); ctx.rotate(Math.PI);
+    ctx.fillText(tile.idx+1, 0, 0); ctx.restore();
+  }
+
+  const tex = new THREE.CanvasTexture(cv);
+  texCache.set(k, tex);
+  return tex;
+}
+
+function makeMaterials(tile) {
+  const tex = getFaceTex(tile);
+  return [
+    new THREE.MeshLambertMaterial({color: C.side.clone()}),   // +x right
+    new THREE.MeshLambertMaterial({color: C.side.clone()}),   // -x left
+    new THREE.MeshLambertMaterial({color: C.top.clone()}),    // +y top
+    new THREE.MeshLambertMaterial({color: C.bot.clone()}),    // -y bottom
+    new THREE.MeshLambertMaterial({map: tex, color: C.face.clone(), transparent:true, opacity:1}), // +z front
+    new THREE.MeshLambertMaterial({color: C.back.clone()}),   // -z back
+  ];
+}
+
+function addTileMesh(tile) {
+  const mesh = new THREE.Mesh(tileGeo, makeMaterials(tile));
+  mesh.position.copy(tilePos(tile.col, tile.row, tile.layer));
+  // renderOrder so higher-layer tiles appear on top in case of depth ties
+  mesh.renderOrder = tile.layer * 200 + tile.row * 10 + tile.col;
+  scene.add(mesh);
+  meshToTile.set(mesh, tile);
+  tile.mesh = mesh;
+}
+
+// ─── THREE.JS INIT ────────────────────────────────────────────────────────────
+function initThree() {
+  const area = document.getElementById('game-area');
+  const W = area.clientWidth, H = area.clientHeight;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0d1a2e);
+
+  camera = new THREE.PerspectiveCamera(50, W/H, 0.1, 300);
+
+  renderer = new THREE.WebGLRenderer({antialias: true});
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.sortObjects = true;
+  area.appendChild(renderer.domElement);
+
+  // Lighting: warm key from upper-right, cool fill, soft ambient
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const key = new THREE.DirectionalLight(0xfff5d0, 1.1);
+  key.position.set(6, 10, 12); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x8aaaff, 0.25);
+  fill.position.set(-5, 3, -4); scene.add(fill);
+
+  raycaster = new THREE.Raycaster();
+  renderer.domElement.addEventListener('click', onCanvasClick);
+
+  ;(function loop() {
+    requestAnimationFrame(loop);
+    renderer.render(scene, camera);
+  })();
+}
+
+function onCanvasClick(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects([...meshToTile.keys()]);
+  if(!hits.length) return;
+  const tile = meshToTile.get(hits[0].object);
+  if(tile) clickTile(tile);
+}
+
+function fitCamera() {
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  for(const t of tiles) {
+    const p = tilePos(t.col, t.row, t.layer);
+    minX=Math.min(minX,p.x-TILE_W/2); maxX=Math.max(maxX,p.x+TILE_W/2);
+    minY=Math.min(minY,p.y-TILE_H/2); maxY=Math.max(maxY,p.y+TILE_H/2);
+  }
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+  const bw=maxX-minX, bh=maxY-minY;
+  const aspect = camera.aspect;
+  const fovR   = camera.fov * Math.PI/180;
+  const distH  = (bh/2 + 0.8) / Math.tan(fovR/2);
+  const distW  = (bw/2 + 0.8) / (Math.tan(fovR/2)*aspect);
+  const dist   = Math.max(distH, distW) * 1.12;
+
+  // Slight downward tilt (~14°) to show tile depth / stacking
+  const tilt = 0.24;
+  camera.position.set(cx, cy + dist*Math.sin(tilt)*0.7, dist*Math.cos(tilt));
+  camera.lookAt(cx, cy - 0.4, 0);
+  camera.updateProjectionMatrix();
+}
+
+// ─── GAME STATE ───────────────────────────────────────────────────────────────
 let tiles = [], selected = null;
 let score = 0, pairsRemoved = 0;
 let timerStart, timerInterval;
-let history = [];
-let hintTimeout = null;
+let history  = [];
+let hintTiles = [], hintTimeout = null;
 
-// ─── GAME INIT ────────────────────────────────────────────────────────────────
+// ─── NEW GAME ─────────────────────────────────────────────────────────────────
 function newGame() {
   document.getElementById('overlay').classList.remove('show');
   clearInterval(timerInterval);
   selected = null; score = 0; pairsRemoved = 0; history = [];
+  hintTiles.forEach(t=>t.hinting=false); hintTiles=[]; clearTimeout(hintTimeout);
   updateStats();
 
   const layoutKey = document.getElementById('layout-select').value;
-  const layout = LAYOUTS[layoutKey].build(); // 144 positions
+  const layout = LAYOUTS[layoutKey].build();
 
-  // Build pool: 144 tiles
+  // Build tile pool (144)
   const types = buildTileTypes();
-  const pool = [];
+  const pool  = [];
   for(const t of types) {
-    const copies = t.matchGroup ? 1 : 4; // flowers/seasons: 1 copy each
-    for(let i=0;i<copies;i++) pool.push({...t});
+    const n = t.matchGroup ? 1 : 4;
+    for(let i=0;i<n;i++) pool.push({...t});
   }
-  fisherYates(pool);
+  for(let i=pool.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]]=[pool[j],pool[i]];
+  }
 
-  tiles = layout.map((pos, i) => ({
-    id: i,
-    col: pos.col, row: pos.row, layer: pos.layer,
-    suit: pool[i].suit, idx: pool[i].idx,
-    glyph: pool[i].glyph, key: pool[i].key,
-    matchGroup: pool[i].matchGroup || null,
-    removed: false, el: null,
+  // Create tile objects
+  tiles = layout.map((pos,i) => ({
+    id: i, col:pos.col, row:pos.row, layer:pos.layer,
+    suit:pool[i].suit, idx:pool[i].idx, glyph:pool[i].glyph,
+    key:pool[i].key, matchGroup:pool[i].matchGroup||null,
+    removed:false, hinting:false, mesh:null,
   }));
 
   renderBoard();
-  updateFreeStatus();
-
   timerStart = Date.now();
-  timerInterval = setInterval(updateTimer, 1000);
+  timerInterval = setInterval(()=>{
+    document.getElementById('timer-val').textContent = fmt(Math.floor((Date.now()-timerStart)/1000));
+  }, 1000);
 }
 
-function fisherYates(arr) {
-  for(let i=arr.length-1;i>0;i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]] = [arr[j],arr[i]];
-  }
-}
-
-// ─── RENDER ───────────────────────────────────────────────────────────────────
-const TW = 56, TH = 72;           // pixel step per col/row
-const LX = 4,  LY = -3;           // pixel offset per layer (3D effect)
-
-function px(col, row, layer) {
-  return { x: col*TW + layer*LX, y: row*TH + layer*LY };
-}
-
+// ─── RENDER BOARD ─────────────────────────────────────────────────────────────
 function renderBoard() {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
+  // Remove old meshes
+  meshToTile.forEach((_t,mesh)=>scene.remove(mesh));
+  meshToTile.clear();
 
-  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
   for(const t of tiles) {
-    const p = px(t.col, t.row, t.layer);
-    minX = Math.min(minX, p.x);       minY = Math.min(minY, p.y);
-    maxX = Math.max(maxX, p.x+52+8);  maxY = Math.max(maxY, p.y+68+8);
+    if(!t.removed) addTileMesh(t);
   }
-  board.style.width  = (maxX-minX)+'px';
-  board.style.height = (maxY-minY)+'px';
-
-  // Sort: lower layers first, within layer by row then col (painter's algorithm)
-  const sorted = [...tiles].sort((a,b) =>
-    a.layer !== b.layer ? a.layer-b.layer : a.row !== b.row ? a.row-b.row : a.col-b.col
-  );
-
-  for(const t of sorted) {
-    if(t.removed) continue;
-    const p = px(t.col, t.row, t.layer);
-    const el = document.createElement('div');
-    el.className = 'tile suit-'+t.suit;
-    el.style.left   = (p.x-minX)+'px';
-    el.style.top    = (p.y-minY)+'px';
-    el.style.zIndex = t.layer*200 + t.row*10 + t.col + 100;
-
-    const face = document.createElement('div');
-    face.className = 'face';
-    face.textContent = t.glyph;
-
-    if(['man','pin','sou'].includes(t.suit)) {
-      const tl = document.createElement('span'); tl.className='corner-tl'; tl.textContent = t.idx+1;
-      const br = document.createElement('span'); br.className='corner-br'; br.textContent = t.idx+1;
-      face.appendChild(tl); face.appendChild(br);
-    }
-
-    el.appendChild(face);
-    el.addEventListener('click', ()=>clickTile(t));
-    t.el = el;
-    board.appendChild(el);
-  }
-
-  // Scale board to fit game area
-  const area = document.getElementById('game-area');
-  const scale = Math.min((area.clientWidth-20)/(maxX-minX), (area.clientHeight-20)/(maxY-minY), 1);
-  board.style.transform = `scale(${scale})`;
+  fitCamera();
+  updateFreeStatus();
 }
 
 // ─── FREE-TILE LOGIC ──────────────────────────────────────────────────────────
 function isFree(tile) {
   if(tile.removed) return false;
-  // Blocked above: any non-removed tile at layer+1 at same (col,row)
+  // Blocked above: tile at same (col,row) on next layer
   if(tiles.some(o => !o.removed && o.layer===tile.layer+1 && o.col===tile.col && o.row===tile.row))
     return false;
-  // Blocked on both sides: must have at least one side open
-  const hasLeft  = tiles.some(o => !o.removed && o.layer===tile.layer && o.col===tile.col-1 && o.row===tile.row);
-  const hasRight = tiles.some(o => !o.removed && o.layer===tile.layer && o.col===tile.col+1 && o.row===tile.row);
-  return !hasLeft || !hasRight;
+  // Need at least one open side
+  const hasL = tiles.some(o => !o.removed && o.layer===tile.layer && o.col===tile.col-1 && o.row===tile.row);
+  const hasR = tiles.some(o => !o.removed && o.layer===tile.layer && o.col===tile.col+1 && o.row===tile.row);
+  return !hasL || !hasR;
 }
 
 function updateFreeStatus() {
   for(const t of tiles) {
-    if(t.removed) continue;
-    t.el.classList.toggle('blocked', !isFree(t));
+    if(t.removed || !t.mesh) continue;
+    let state;
+    if(t === selected)     state = 'selected';
+    else if(t.hinting)     state = 'hint';
+    else if(!isFree(t))    state = 'blocked';
+    else                   state = 'normal';
+    applyState(t, state);
   }
 }
 
-function tilesMatch(a, b) {
+function tilesMatch(a,b) {
   if(a.id===b.id) return false;
   if(a.matchGroup && b.matchGroup) return a.matchGroup===b.matchGroup;
   return a.key===b.key;
@@ -562,119 +522,150 @@ function tilesMatch(a, b) {
 
 // ─── CLICK ────────────────────────────────────────────────────────────────────
 function clickTile(tile) {
-  if(tile.removed || tile.el.classList.contains('blocked')) return;
+  if(tile.removed || !isFree(tile)) return;
 
   if(selected===null) {
     selected = tile;
-    tile.el.classList.add('selected');
+    applyState(tile, 'selected');
     return;
   }
   if(selected===tile) {
-    tile.el.classList.remove('selected');
     selected = null;
+    applyState(tile, 'normal');
     return;
   }
 
   if(tilesMatch(selected, tile)) {
     const a=selected, b=tile;
-    history.push({a, b});
-    [a,b].forEach(t => {
-      t.el.classList.add('removing');
-      setTimeout(()=>{ t.removed=true; t.el.style.display='none'; }, 220);
-    });
+    history.push({a,b});
     selected = null;
     pairsRemoved++; score += 10;
     updateStats();
-    setTimeout(()=>{ updateFreeStatus(); checkEndState(); }, 240);
+    animateRemove(a, b, ()=>{ updateFreeStatus(); checkEnd(); });
   } else {
-    selected.el.classList.remove('selected');
+    // Change selection
+    applyState(selected, isFree(selected) ? 'normal' : 'blocked');
     selected = tile;
-    tile.el.classList.add('selected');
+    applyState(tile, 'selected');
   }
+}
+
+// ─── REMOVE ANIMATION ─────────────────────────────────────────────────────────
+function animateRemove(a, b, onDone) {
+  // Make front face material transparent-capable (already set at creation)
+  [a,b].forEach(t=>{
+    if(t.mesh) t.mesh.material.forEach(m=>{m.transparent=true;m.opacity=1;});
+  });
+  const start=Date.now(), DUR=260;
+  function tick() {
+    const p = Math.min((Date.now()-start)/DUR, 1);
+    [a,b].forEach(t=>{
+      if(!t.mesh) return;
+      const s=1-p;
+      t.mesh.scale.setScalar(Math.max(s,0.001));
+      t.mesh.material.forEach(m=>m.opacity=1-p);
+    });
+    if(p<1) { requestAnimationFrame(tick); return; }
+    [a,b].forEach(t=>{
+      t.removed=true;
+      scene.remove(t.mesh);
+      meshToTile.delete(t.mesh);
+      t.mesh=null;
+    });
+    onDone();
+  }
+  requestAnimationFrame(tick);
 }
 
 // ─── UNDO ─────────────────────────────────────────────────────────────────────
 function undoMove() {
   if(!history.length) return;
-  const {a, b} = history.pop();
-  [a,b].forEach(saved => {
-    const t = tiles[saved.id];
-    t.removed = false;
-    t.el.style.display = '';
-    t.el.classList.remove('removing');
+  const {a,b} = history.pop();
+  if(selected){ applyState(selected,'normal'); selected=null; }
+  [a,b].forEach(id=>{
+    const t=tiles[id.id];
+    t.removed=false;
+    addTileMesh(t);
   });
-  if(selected) { selected.el.classList.remove('selected'); selected=null; }
-  pairsRemoved--; score = Math.max(0, score-10);
+  pairsRemoved--; score=Math.max(0,score-10);
   updateFreeStatus(); updateStats();
 }
 
 // ─── HINT ─────────────────────────────────────────────────────────────────────
 function showHint() {
-  if(hintTimeout) clearTimeout(hintTimeout);
+  // Clear previous hint
+  if(hintTimeout){ clearTimeout(hintTimeout); hintTimeout=null; }
+  hintTiles.forEach(t=>{ t.hinting=false; });
+  hintTiles=[];
+
   const free = tiles.filter(t=>!t.removed && isFree(t));
   for(let i=0;i<free.length;i++) {
     for(let j=i+1;j<free.length;j++) {
-      if(tilesMatch(free[i], free[j])) {
-        const [a,b] = [free[i], free[j]];
-        a.el.classList.add('hint-flash'); b.el.classList.add('hint-flash');
-        hintTimeout = setTimeout(()=>{
-          a.el.classList.remove('hint-flash'); b.el.classList.remove('hint-flash');
-        }, 1600);
+      if(tilesMatch(free[i],free[j])) {
+        hintTiles=[free[i],free[j]];
+        hintTiles.forEach(t=>{t.hinting=true;});
+        updateFreeStatus();
+        hintTimeout=setTimeout(()=>{
+          hintTiles.forEach(t=>{t.hinting=false;});
+          hintTiles=[]; hintTimeout=null;
+          updateFreeStatus();
+        },1700);
         return;
       }
     }
   }
-  flashNoMoves();
-}
-
-function flashNoMoves() {
-  const el = document.getElementById('no-moves');
-  el.style.display = 'block';
-  clearTimeout(flashNoMoves._t);
-  flashNoMoves._t = setTimeout(()=>el.style.display='none', 2800);
+  const el=document.getElementById('no-moves');
+  el.style.display='block';
+  clearTimeout(showHint._t);
+  showHint._t=setTimeout(()=>el.style.display='none',2800);
 }
 
 // ─── WIN / LOSE ───────────────────────────────────────────────────────────────
-function checkEndState() {
-  const remaining = tiles.filter(t=>!t.removed);
-  if(!remaining.length) {
+function checkEnd() {
+  const left = tiles.filter(t=>!t.removed);
+  if(!left.length) {
     clearInterval(timerInterval);
-    const s = Math.floor((Date.now()-timerStart)/1000);
-    showOverlay('勝利!', `Alle 72 Paare entfernt! Zeit: ${fmt(s)} | Punkte: ${score}`);
+    const s=Math.floor((Date.now()-timerStart)/1000);
+    showOverlay('勝利!',`Alle 72 Paare entfernt! Zeit: ${fmt(s)} · Punkte: ${score}`);
     return;
   }
-  const free = remaining.filter(t=>isFree(t));
+  const free=left.filter(t=>isFree(t));
   let ok=false;
   outer: for(let i=0;i<free.length;i++)
     for(let j=i+1;j<free.length;j++)
       if(tilesMatch(free[i],free[j])){ok=true;break outer;}
-  if(!ok) {
+  if(!ok){
     clearInterval(timerInterval);
-    showOverlay('Keine Züge', `Keine weiteren Züge möglich. Noch ${remaining.length} Steine übrig.`);
+    showOverlay('Keine Züge',`Keine weiteren Züge möglich. Noch ${left.length} Steine übrig.`);
   }
 }
 
-function showOverlay(title, msg) {
-  document.getElementById('overlay-title').textContent = title;
-  document.getElementById('overlay-msg').textContent   = msg;
+function showOverlay(title,msg) {
+  document.getElementById('overlay-title').textContent=title;
+  document.getElementById('overlay-msg').textContent=msg;
   document.getElementById('overlay').classList.add('show');
 }
 
-// ─── STATS / TIMER ────────────────────────────────────────────────────────────
-function updateTimer() {
-  document.getElementById('timer-val').textContent = fmt(Math.floor((Date.now()-timerStart)/1000));
-}
-function fmt(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
-
+// ─── STATS ────────────────────────────────────────────────────────────────────
 function updateStats() {
-  document.getElementById('score-val').textContent = score;
-  document.getElementById('pairs-val').textContent = pairsRemoved;
-  document.getElementById('left-val').textContent  = tiles.filter(t=>!t.removed).length;
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('pairs-val').textContent=pairsRemoved;
+  document.getElementById('left-val').textContent=tiles.filter(t=>!t.removed).length;
 }
+function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 
-// ─── RESIZE / START ───────────────────────────────────────────────────────────
-window.addEventListener('resize', ()=>{ if(tiles.length){ renderBoard(); updateFreeStatus(); } });
-newGame();
+// ─── RESIZE ───────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  const area=document.getElementById('game-area');
+  const W=area.clientWidth, H=area.clientHeight;
+  camera.aspect=W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W,H);
+  if(tiles.length) fitCamera();
+});
+
+// ─── START ────────────────────────────────────────────────────────────────────
+initThree();
+document.fonts.ready.then(()=>newGame());
 </script>
 </body>
 </html>
