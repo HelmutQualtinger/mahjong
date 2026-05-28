@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Traditionelles Mahjong</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1e3f20; /* Klassisches Filz-Grün */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+        h1 { margin: 10px 0 5px 0; font-weight: 300; }
+        #controls { margin-bottom: 15px; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #b33939;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 0 #8c2424;
+        }
+        button:hover { background: #cd6161; }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: #142b15;
+            border: 8px solid #5c3d2e; /* Holzrahmen-Optik */
+            border-radius: 4px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+        }
+        .tile {
+            position: absolute;
+            width: 48px;
+            height: 64px;
+            background: #fbfcf7; /* Knochen/Elfenbein-Farbe */
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            /* Klassischer Mahjong-Stein-Look (Vorderseite hell, Rückseite grün/Bambus) */
+            box-shadow: 
+                -1px 1px 0 #e2e8f0,
+                -3px 3px 0 #27ae60, /* Grüne Steinschicht */
+                -4px 4px 0 #1e824c,
+                -6px 6px 8px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 42px; /* Größere Darstellung für die Schriftzeichen */
+            cursor: pointer;
+            user-select: none;
+            line-height: 1;
+        }
+        /* Farbcodierung für traditionelle Symbole im CSS (Unicode-Vorschau) */
+        .tile:has(.red) { color: #cc0000; }
+        .tile:has(.green) { color: #008800; }
+        .tile:has(.blue) { color: #0000cc; }
+        
+        .tile:hover {
+            transform: translate(1px, -1px);
+        }
+        .tile.selected {
+            background: #ffeaa7 !important;
+            box-shadow: 
+                -1px 1px 0 #ffeaa7,
+                -3px 3px 0 #d63031, /* Roter Schatten bei Auswahl */
+                -4px 4px 0 #b32626,
+                -6px 6px 12px rgba(214, 48, 49, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Traditionelles Mahjong</h1>
+    <div id="controls">
+        <button onclick="initGame()">Neues Spiel</button>
+    </div>
+    <div id="game-container"></div>
+
+<script>
+const container = document.getElementById('game-container');
+let tilesData = [];
+let selectedTile = null;
+
+// Die 36 traditionellen Mahjong-Steine (jeder kommt 4x vor = 144 Steine)
+const traditionalSymbols = [
+    // Winde (Ost, Süd, West, Nord)
+    { char: '🀀', color: 'blue' }, { char: '🀁', color: 'blue' }, { char: '🀂', color: 'blue' }, { char: '🀃', color: 'blue' },
+    // Drachen (Rot, Grün, Weiß)
+    { char: '🀄', color: 'red' }, { char: '🀅', color: 'green' }, { char: '🀆', color: 'blue' },
+    // Zahlen/Schriftzeichen (1-9)
+    { char: '🀇', color: 'red' }, { char: '🀈', color: 'red' }, { char: '🀉', color: 'red' }, { char: '🀊', color: 'red' }, { char: '🀋', color: 'red' }, { char: '🀌', color: 'red' }, { char: '🀍', color: 'red' }, { char: '🀎', color: 'red' }, { char: '🀏', color: 'red' },
+    // Bambus (1-9)
+    { char: '🀐', color: 'green' }, { char: '🀑', color: 'green' }, { char: '🀒', color: 'green' }, { char: '🀓', color: 'green' }, { char: '🀔', color: 'green' }, { char: '🀕', color: 'green' }, { char: '🀖', color: 'green' }, { char: '🀗', color: 'green' }, { char: '🀘', color: 'green' },
+    // Kreise/Ziegel (1-9)
+    { char: '🀙', color: 'blue' }, { char: '🀚', color: 'blue' }, { char: '🀛', color: 'blue' }, { char: '🀜', color: 'blue' }, { char: '🀝', color: 'blue' }, { char: '🀞', color: 'blue' }, { char: '🀟', color: 'blue' }, { char: '🀠', color: 'blue' }, { char: '🀡', color: 'blue' }
+];
+
+let symbolsPool = [];
+traditionalSymbols.forEach(sym => {
+    for(let i = 0; i < 4; i++) {
+        symbolsPool.push(sym);
+    }
+});
+
+const tileLayout = [];
+function createLayout() {
+    tileLayout.length = 0;
+    // Ebene 0: Basis
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 12; c++) {
+            if ((r==0 || r==7) && (c<2 || c>9)) continue;
+            tileLayout.push({x: c * 52 + 80, y: r * 68 + 30, z: 0});
+        }
+    }
+    // Ebene 1
+    for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 8; c++) {
+            tileLayout.push({x: c * 52 + 184, y: r * 68 + 98, z: 1});
+        }
+    }
+    // Ebene 2
+    for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+            tileLayout.push({x: c * 52 + 288, y: r * 68 + 166, z: 2});
+        }
+    }
+    // Ebene 3: Spitze
+    for (let r = 0; r < 2; r++) {
+        for (let c = 0; c < 2; c++) {
+            tileLayout.push({x: c * 52 + 340, y: r * 68 + 234, z: 3});
+        }
+    }
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+const TILE_W = 48, TILE_H = 64;
+function isFree(tile) {
+    let blockedLeft = false;
+    let blockedRight = false;
+    let blockedAbove = false;
+
+    for (let other of tilesData) {
+        if (other === tile) continue;
+        if (other.z === tile.z + 1) {
+            if (Math.abs(other.x - tile.x) < TILE_W && Math.abs(other.y - tile.y) < TILE_H) {
+                blockedAbove = true;
+            }
+        }
+        if (other.z === tile.z && Math.abs(other.y - tile.y) < TILE_H) {
+            if (other.x === tile.x - 52) blockedLeft = true;
+            if (other.x === tile.x + 52) blockedRight = true;
+        }
+    }
+    return !blockedAbove && (!blockedLeft || !blockedRight);
+}
+
+function initGame() {
+    container.innerHTML = '';
+    selectedTile = null;
+    createLayout();
+    
+    let currentSymbols = [...symbolsPool];
+    shuffle(currentSymbols);
+    
+    const activeLayout = tileLayout.slice(0, currentSymbols.length);
+    
+    tilesData = activeLayout.map((pos, index) => {
+        const item = currentSymbols[index];
+        const el = document.createElement('div');
+        el.className = 'tile';
+        el.style.left = `${pos.x - pos.z * 4}px`;
+        el.style.top = `${pos.y - pos.z * 4}px`;
+        el.style.zIndex = pos.z;
+        
+        // Verpackt das Zeichen in ein farbkodiertes Span
+        el.innerHTML = `<span class="${item.color}">${item.char}</span>`;
+        
+        const tileObj = { el, x: pos.x, y: pos.y, z: pos.z, symbol: item.char };
+        
+        el.addEventListener('click', () => handleTileClick(tileObj));
+        container.appendChild(el);
+        return tileObj;
+    });
+}
+
+function handleTileClick(tile) {
+    if (!isFree(tile)) return;
+
+    if (selectedTile === null) {
+        selectedTile = tile;
+        tile.el.classList.add('selected');
+    } else if (selectedTile === tile) {
+        tile.el.classList.remove('selected');
+        selectedTile = null;
+    } else {
+        if (selectedTile.symbol === tile.symbol) {
+            selectedTile.el.remove();
+            tile.el.remove();
+            tilesData = tilesData.filter(t => t !== tile && t !== selectedTile);
+            selectedTile = null;
+            
+            if (tilesData.length === 0) {
+                setTimeout(() => alert('Glückwunsch! Alle traditionellen Steine abgeräumt. 🎋'), 200);
+            }
+        } else {
+            selectedTile.el.classList.remove('selected');
+            selectedTile = tile;
+            tile.el.classList.add('selected');
+        }
+    }
+}
+
+initGame();
+</script>
+</body>
+</html>
