@@ -200,6 +200,7 @@ select#layout-select option { background: #0d1f3a; }
         <option value="castle">🏰 Festung</option>
       </select>
     </div>
+    <button id="music-btn" onclick="toggleMusic()">🎵 Musik</button>
     <button onclick="undoMove()">↩ Rückgängig</button>
     <button onclick="showHint()">💡 Hinweis</button>
     <button onclick="resetView()">🎯 Ansicht</button>
@@ -762,12 +763,144 @@ window.addEventListener('resize',()=>{
   if(tiles.length) fitCamera();
 });
 
+// ─── 义勇军进行曲 — CHINESE NATIONAL ANTHEM (Web Audio API) ──────────────────
+// March of the Volunteers · Bb major · 96 BPM
+// Bb3=58 C4=60 D4=62 Eb4=63 F4=65 G4=67 A4=69 Bb4=70 C5=72 D5=74 F5=77
+const BPM  = 96;
+const BEAT = 60 / BPM;                            // 0.625 s per beat
+const midi2hz = m => 440 * Math.pow(2, (m-69)/12);
+
+const ANTHEM = [
+  // 起来！不愿做奴隶的人们
+  [65,1],[65,0.5],[65,0.5],[62,0.5],[60,0.5],
+  [58,0.5],[65,1.5],[62,0.25],[65,0.25],[70,2],
+  // 把我们的血肉，筑成我们新的长城
+  [70,0.5],[69,0.5],[70,0.5],[72,0.5],[70,1],
+  [65,0.5],[67,0.5],[69,1],[70,2],
+  // 中华民族到了最危险的时候
+  [74,0.5],[74,0.5],[74,0.5],[70,0.5],[67,0.5],
+  [65,0.5],[62,0.5],[65,0.5],[62,0.5],[58,1],[67,0.25],[65,0.25],
+  // 每个人被迫着，发出最后的吼声
+  [65,1.5],[62,0.25],[65,0.25],[70,0.5],[67,0.5],[65,0.5],[62,0.5],[65,2],
+  // 起来！起来！起来！
+  [70,0.5],[70,0.5],[70,0.5],[70,0.5],[70,2],
+  // 我们万众一心
+  [67,0.5],[65,1],[62,0.5],[65,1],
+  // 冒着敌人的炮火，前进！
+  [70,1.5],[67,0.25],[65,0.25],[62,0.5],[70,0.5],[67,0.5],[65,1],
+  // 冒着敌人的炮火，前进！（repeat）
+  [70,1.5],[67,0.25],[65,0.25],[62,0.5],[70,0.5],[67,0.5],[65,0.5],
+  // 前进！前进！进！
+  [65,1.5],[62,0.25],[65,0.25],[65,2],[70,4],
+];
+
+let audioCtx=null, masterGain=null, wetBus=null;
+let musicPlaying=false, musicTimers=[];
+
+function toggleMusic() {
+  musicPlaying ? stopMusic() : startMusic();
+}
+
+function startMusic() {
+  if(musicPlaying) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+  // Master output — fade in
+  masterGain = audioCtx.createGain();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.60, audioCtx.currentTime+2);
+  masterGain.connect(audioCtx.destination);
+
+  // Reverb bus (delay + feedback)
+  const delay = audioCtx.createDelay(1.0);
+  delay.delayTime.value = 0.22;
+  const fb  = audioCtx.createGain(); fb.gain.value  = 0.28;
+  const wet = audioCtx.createGain(); wet.gain.value = 0.25;
+  delay.connect(fb); fb.connect(delay);
+  delay.connect(masterGain);
+  wet.connect(delay);
+  wetBus = wet;
+
+  musicPlaying = true;
+  scheduleAnthem();
+  document.getElementById('music-btn').textContent = '🔇 Musik';
+}
+
+function stopMusic() {
+  if(!musicPlaying) return;
+  musicPlaying = false;
+  musicTimers.forEach(clearTimeout); musicTimers=[];
+  if(masterGain) {
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+2);
+    setTimeout(()=>{ try{audioCtx.close();}catch(e){} audioCtx=null; }, 2200);
+  }
+  document.getElementById('music-btn').textContent = '🎵 Musik';
+}
+
+// ── Brass-like melody note: sawtooth + lowpass ────────────────────────────────
+function playMelodyNote(midi, t0, dur) {
+  if(!audioCtx||!musicPlaying) return;
+  const freq = midi2hz(midi);
+  const osc  = audioCtx.createOscillator();
+  const filt = audioCtx.createBiquadFilter();
+  const g    = audioCtx.createGain();
+
+  osc.type = 'sawtooth';
+  osc.frequency.value = freq;
+  filt.type = 'lowpass';
+  filt.frequency.setValueAtTime(800,  t0);
+  filt.frequency.linearRampToValueAtTime(1800, t0+0.06);
+  filt.Q.value = 2.0;
+
+  const hold = Math.max(dur-0.08, 0.04);
+  g.gain.setValueAtTime(0,   t0);
+  g.gain.linearRampToValueAtTime(0.22, t0+0.04);
+  g.gain.setValueAtTime(0.22, t0+hold);
+  g.gain.linearRampToValueAtTime(0,    t0+hold+0.09);
+
+  osc.connect(filt); filt.connect(g);
+  g.connect(wetBus); g.connect(masterGain);
+  osc.start(t0); osc.stop(t0+dur+0.2);
+}
+
+// ── Percussion bass hit on strong beats ───────────────────────────────────────
+function playBassNote(midi, t0) {
+  if(!audioCtx||!musicPlaying) return;
+  const freq = midi2hz(midi-24);   // 2 octaves below melody
+  const osc  = audioCtx.createOscillator();
+  const g    = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0.20, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0+0.38);
+  osc.connect(g); g.connect(masterGain);
+  osc.start(t0); osc.stop(t0+0.45);
+}
+
+// ── Schedule the full anthem then loop ────────────────────────────────────────
+function scheduleAnthem() {
+  if(!musicPlaying||!audioCtx) return;
+  let t    = audioCtx.currentTime + 0.05;
+  let beat = 0;
+  for(const [midi, beats] of ANTHEM) {
+    const dur = beats * BEAT;
+    playMelodyNote(midi, t, dur);
+    // Bass accent on every whole-beat boundary
+    if(Math.floor(beat) < Math.floor(beat+beats)) playBassNote(midi, t);
+    t    += dur;
+    beat += beats;
+  }
+  const totalMs = ANTHEM.reduce((s,[,b])=>s+b, 0) * BEAT * 1000;
+  musicTimers.push(setTimeout(scheduleAnthem, totalMs + 300));
+}
+
 // ─── START ────────────────────────────────────────────────────────────────────
 // Expose functions to HTML onclick handlers (module scope is not global)
-window.newGame   = newGame;
-window.undoMove  = undoMove;
-window.showHint  = showHint;
-window.resetView = resetView;
+window.newGame     = newGame;
+window.undoMove    = undoMove;
+window.showHint    = showHint;
+window.resetView   = resetView;
+window.toggleMusic = toggleMusic;
 
 initThree();
 document.fonts.ready.then(()=>newGame());
