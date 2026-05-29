@@ -64,9 +64,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&display=swap');
 
 :root {
-  --gold: #d4af37;
-  --bg:   #0a1628;
-  --text: #e8d5a0;
+  --gold: #9a6f00;
+  --bg:   #f2ead8;
+  --text: #3a2910;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -86,8 +86,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 7px 16px;
-  background: linear-gradient(180deg, #0a1628, #0d1f3a);
-  border-bottom: 1px solid #1e3a5f;
+  background: linear-gradient(180deg, #e8ddc8, #d9ceae);
+  border-bottom: 1px solid #bba870;
   flex-shrink: 0;
   gap: 10px;
   flex-wrap: wrap;
@@ -103,7 +103,7 @@ body {
   white-space: nowrap;
 }
 
-.stats { display:flex; gap:16px; font-size:0.72em; color:#a0b8d0; }
+.stats { display:flex; gap:16px; font-size:0.72em; color:#6b4f1a; }
 .stat  { text-align:center; }
 .stat-val { font-size:1.4em; color:var(--gold); display:block; line-height:1.1; }
 
@@ -124,11 +124,11 @@ button {
 button:hover  { background: rgba(212,175,55,0.15); }
 button:active { background: rgba(212,175,55,0.3); }
 
-.layout-wrap { display:flex; align-items:center; gap:6px; font-size:0.68em; color:#a0b8d0; }
+.layout-wrap { display:flex; align-items:center; gap:6px; font-size:0.68em; color:#6b4f1a; }
 select#layout-select {
-  background: #0d1f3a;
+  background: #ede1c5;
   border: 1px solid var(--gold);
-  color: var(--gold);
+  color: var(--text);
   font-family: 'Cinzel', serif;
   font-size: 1em;
   padding: 4px 8px;
@@ -136,7 +136,7 @@ select#layout-select {
   cursor: pointer;
   outline: none;
 }
-select#layout-select option { background: #0d1f3a; }
+select#layout-select option { background: #ede1c5; }
 
 #game-area {
   flex: 1;
@@ -149,24 +149,24 @@ select#layout-select option { background: #0d1f3a; }
 #overlay {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.45);
   z-index: 100;
   align-items: center; justify-content: center;
 }
 #overlay.show { display: flex; }
 #overlay-box {
-  background: linear-gradient(135deg, #0f1f3d, #0a2815);
+  background: linear-gradient(135deg, #faf5e8, #eee0c0);
   border: 2px solid var(--gold);
   border-radius: 12px;
   padding: 40px 60px;
   text-align: center;
-  box-shadow: 0 0 60px rgba(212,175,55,0.3);
+  box-shadow: 0 0 60px rgba(154,111,0,0.25);
 }
 #overlay-box h2 {
   font-size:2em; color:var(--gold); margin-bottom:10px;
   font-family:'Noto Serif SC',serif; letter-spacing:4px;
 }
-#overlay-box p { color:#a0b8d0; margin-bottom:24px; }
+#overlay-box p { color:#5a3e18; margin-bottom:24px; }
 #overlay-box button { padding:10px 28px; font-size:0.85em; }
 
 #no-moves {
@@ -434,7 +434,7 @@ function initThree() {
   const W = area.clientWidth, H = area.clientHeight;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d1a2e);
+  scene.background = new THREE.Color(0xe8dfc8);
 
   camera = new THREE.PerspectiveCamera(50, W/H, 0.1, 300);
 
@@ -445,10 +445,10 @@ function initThree() {
   area.appendChild(renderer.domElement);
 
   // Lighting: warm key from upper-right, cool fill, soft ambient
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-  const key = new THREE.DirectionalLight(0xfff5d0, 1.1);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const key = new THREE.DirectionalLight(0xfff8e8, 1.6);
   key.position.set(6, 10, 12); scene.add(key);
-  const fill = new THREE.DirectionalLight(0x8aaaff, 0.25);
+  const fill = new THREE.DirectionalLight(0xd0e8ff, 0.5);
   fill.position.set(-5, 3, -4); scene.add(fill);
 
   raycaster = new THREE.Raycaster();
