@@ -813,9 +813,9 @@ function startMusic() {
 
   // Reverb bus (delay + feedback)
   const delay = audioCtx.createDelay(1.0);
-  delay.delayTime.value = 0.22;
-  const fb  = audioCtx.createGain(); fb.gain.value  = 0.28;
-  const wet = audioCtx.createGain(); wet.gain.value = 0.25;
+  delay.delayTime.value = 0.46;
+  const fb  = audioCtx.createGain(); fb.gain.value  = 0.38;
+  const wet = audioCtx.createGain(); wet.gain.value = 0.45;
   delay.connect(fb); fb.connect(delay);
   delay.connect(masterGain);
   wet.connect(delay);
@@ -837,44 +837,47 @@ function stopMusic() {
   document.getElementById('music-btn').textContent = '🎵 Musik';
 }
 
-// ── Brass-like melody note: sawtooth + lowpass ────────────────────────────────
+// ── Harp pluck: sine fundamental + octave harmonic, instant attack, long decay ─
 function playMelodyNote(midi, t0, dur) {
   if(!audioCtx||!musicPlaying) return;
-  const freq = midi2hz(midi);
-  const osc  = audioCtx.createOscillator();
-  const filt = audioCtx.createBiquadFilter();
-  const g    = audioCtx.createGain();
+  const freq   = midi2hz(midi);
+  const decay  = Math.min(dur * 1.6 + 0.4, 3.2);   // ring longer than the note
 
-  osc.type = 'sawtooth';
-  osc.frequency.value = freq;
-  filt.type = 'lowpass';
-  filt.frequency.setValueAtTime(800,  t0);
-  filt.frequency.linearRampToValueAtTime(1800, t0+0.06);
-  filt.Q.value = 2.0;
+  // Fundamental — sine, warm body
+  const osc1 = audioCtx.createOscillator();
+  const g1   = audioCtx.createGain();
+  osc1.type = 'sine';
+  osc1.frequency.value = freq;
+  g1.gain.setValueAtTime(0.28, t0);
+  g1.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+  osc1.connect(g1);
+  g1.connect(wetBus); g1.connect(masterGain);
+  osc1.start(t0); osc1.stop(t0 + decay + 0.05);
 
-  const hold = Math.max(dur-0.08, 0.04);
-  g.gain.setValueAtTime(0,   t0);
-  g.gain.linearRampToValueAtTime(0.22, t0+0.04);
-  g.gain.setValueAtTime(0.22, t0+hold);
-  g.gain.linearRampToValueAtTime(0,    t0+hold+0.09);
-
-  osc.connect(filt); filt.connect(g);
-  g.connect(wetBus); g.connect(masterGain);
-  osc.start(t0); osc.stop(t0+dur+0.2);
+  // Octave harmonic — triangle, bright initial sparkle, fades fast
+  const osc2 = audioCtx.createOscillator();
+  const g2   = audioCtx.createGain();
+  osc2.type = 'triangle';
+  osc2.frequency.value = freq * 2;
+  g2.gain.setValueAtTime(0.10, t0);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t0 + decay * 0.35);
+  osc2.connect(g2);
+  g2.connect(wetBus); g2.connect(masterGain);
+  osc2.start(t0); osc2.stop(t0 + decay * 0.4);
 }
 
-// ── Percussion bass hit on strong beats ───────────────────────────────────────
+// ── Bass harp string — one octave below, longer ring ─────────────────────────
 function playBassNote(midi, t0) {
   if(!audioCtx||!musicPlaying) return;
-  const freq = midi2hz(midi-24);   // 2 octaves below melody
+  const freq = midi2hz(midi - 12);   // 1 octave below melody
   const osc  = audioCtx.createOscillator();
   const g    = audioCtx.createGain();
-  osc.type = 'triangle';
+  osc.type = 'sine';
   osc.frequency.value = freq;
-  g.gain.setValueAtTime(0.20, t0);
-  g.gain.exponentialRampToValueAtTime(0.001, t0+0.38);
+  g.gain.setValueAtTime(0.22, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.4);
   osc.connect(g); g.connect(masterGain);
-  osc.start(t0); osc.stop(t0+0.45);
+  osc.start(t0); osc.stop(t0 + 1.5);
 }
 
 // ── Schedule the full anthem then loop ────────────────────────────────────────
